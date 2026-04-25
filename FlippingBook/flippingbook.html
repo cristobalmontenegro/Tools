@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi FlippingBook</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    
+    <script src="turn.js"></script>
+
+    <style>
+        body {
+            background-color: #333333;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+            overflow: hidden;
+        }
+
+        /* Barra Inferior */
+        #toolbar {
+            position: absolute;
+            bottom: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        button {
+            background: transparent;
+            color: white;
+            border: 1px solid white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: white;
+            color: black;
+        }
+
+        /* Contenedor del Libro */
+        #book-wrapper {
+            margin-top: 5vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-origin: top center;
+            transition: transform 0.3s ease;
+        }
+
+        #flipbook {
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        #flipbook .page {
+            background: white;
+        }
+
+        /* Sombras para dar efecto de profundidad en el pliegue */
+        #flipbook .even {
+            background: linear-gradient(to right, #ffffff 90%, #dcdcdc 100%);
+        }
+        #flipbook .odd {
+            background: linear-gradient(to left, #ffffff 90%, #dcdcdc 100%);
+        }
+
+        .loading-screen {
+            color: white;
+            position: absolute;
+            top: 50%;
+            font-size: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading" class="loading-screen">Convirtiendo PDF a Libro...</div>
+
+    <div id="book-wrapper">
+        <div id="flipbook"></div>
+    </div>
+
+    <div id="toolbar" style="display:none;">
+        <button id="btn-prev">◄ Anterior</button>
+        <button id="btn-zoom-in">🔍 Zoom +</button>
+        <button id="btn-zoom-out">🔍 Zoom -</button>
+        <button id="btn-next">Siguiente ►</button>
+    </div>
+
+    <script>
+        const url = 'archivo.pdf'; 
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        let zoom = 1;
+
+        async function createFlipbook() {
+            try {
+                const pdf = await pdfjsLib.getDocument(url).promise;
+                
+                const page1 = await pdf.getPage(1);
+                const viewport = page1.getViewport({ scale: 1.2 });
+                const w = viewport.width;
+                const h = viewport.height;
+                const $flipbook = $('#flipbook');
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = w;
+                    canvas.height = h;
+
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    $flipbook.append($('<div class="page"></div>').append(canvas));
+                }
+
+                $('#loading').hide();
+                $('#toolbar').show();
+
+                // INICIAR LA ANIMACIÓN
+                $flipbook.turn({
+                    width: w * 2,
+                    height: h,
+                    elevation: 50,
+                    gradients: true,
+                    autoCenter: true
+                });
+
+                // Botones
+                $('#btn-prev').click(() => $flipbook.turn('previous'));
+                $('#btn-next').click(() => $flipbook.turn('next'));
+                $('#btn-zoom-in').click(() => {
+                    zoom += 0.2;
+                    $('#book-wrapper').css('transform', `scale(${zoom})`);
+                });
+                $('#btn-zoom-out').click(() => {
+                    zoom -= 0.2;
+                    if(zoom < 0.4) zoom = 0.4;
+                    $('#book-wrapper').css('transform', `scale(${zoom})`);
+                });
+
+                // Teclado
+                $(document).keydown((e) => {
+                    if (e.keyCode === 37) $flipbook.turn('previous');
+                    if (e.keyCode === 39) $flipbook.turn('next');
+                });
+
+            } catch (err) {
+                console.error(err);
+                $('#loading').text('Error leyendo el PDF. Revisa la consola.');
+            }
+        }
+
+        // Ejecutar
+        $(document).ready(function() {
+            if ($.fn.turn) {
+                createFlipbook();
+            } else {
+                $('#loading').text('Aún no encuentra turn.js. Verifica que esté en la misma carpeta.');
+            }
+        });
+    </script>
+</body>
+</html>
