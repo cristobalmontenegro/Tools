@@ -114,3 +114,16 @@
 **ES:** Publicado bajo la licencia MIT. **EN:** Released under the MIT License.
 
 — **Cristóbal Montenegro** ([@cristobalmontenegro](https://github.com/cristobalmontenegro))
+
+---
+
+## 👤 Author / Autoría
+
+**Cristóbal Montenegro**  
+GitHub: [@cristobalmontenegro](https://github.com/cristobalmontenegro)
+
+---
+
+## 📜 License / Licencia
+
+MIT — see [`LICENSE`](../../LICENSE).
